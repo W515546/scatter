@@ -10,6 +10,24 @@ Scatter is a utility to dig through the codebase to find potential "consumers" o
 
 The goal is to give you a heads-up about downstream dependencies before you merge or deploy, helping you identify potential integration issues or areas that need extra testing. The optional summarization provides basic insights into the *content* of the consuming code.
 
+## tl;dr Examples:
+
+```powershell
+python scatter.py --branch-name feature-branch-name --base-branch main --repo-path .
+```
+
+```powershell
+python scatter.py --target-project .\MyDotNetApp\MyDotNetApp.csproj --search-scope . --summarize-consumers --google-api-key AIza.... --output output.csv
+```
+
+```powershell
+python scatter.py --target-project ..\OD\Dev\src\Lighthouse1\Claim\Data\Lighthouse1.Claim.Data.Core\ --class-name ClaimWebServiceData --search-scope ..\OD\
+```
+
+```powershell
+python scatter.py --stored-procedure "dbo.sp_InsertPortalConfiguration" --search-scope .
+```
+
 ## Table of Contents (TBD)
 
 1.  [Installation](#installation-windows-using-powershell)
@@ -81,7 +99,7 @@ This script uses the Google Gemini API for summarizing (`--summarize-consumers` 
         To set it permanently, search for "Edit the system environment variables" in Windows search.
     * **Command-Line Argument:** Use the `--google-api-key` argument when running the script:
         ```powershell
-        python your_script_name.py --google-api-key YOUR_API_KEY_HERE [other arguments...]
+        python scatter.py --google-api-key YOUR_API_KEY_HERE [other arguments...]
         ```
 
 Remember to activate the virtual environment (`.\.venv\Scripts\Activate.ps1`) in your session each time you want to run the script.
@@ -134,7 +152,7 @@ You can optionally provide a CSV file (`--pipeline-csv`) mapping project names (
 
 ## Usage & Examples
 
-You run the script from your command line using `python your_script_name.py ...`. Here's a breakdown of the arguments:
+You run the script from your command line using `python scatter.py ...`. Here's a breakdown of the arguments:
 
 *(Make sure your current directory is somewhere within the Git repository you want to analyze if using Git Branch mode without specifying an absolute `--repo-path`.)*
 
@@ -146,7 +164,7 @@ You **MUST** choose one of these two modes:
     * **What:** Tells the script to analyze consumers of a specific project. You can provide the direct path to the `.csproj` file or the path to the directory containing it (it will find the first `.csproj` in that directory).
     * **Example:**
         ```powershell
-        python your_script_name.py --target-project src/MyCoreLibrary --search-scope .
+        python scatter.py --target-project src/MyCoreLibrary --search-scope .
         ```
         *(Analyzes consumers of the project found in `src/MyCoreLibrary`, searching the entire current directory `.`)*
 
@@ -156,7 +174,7 @@ You **MUST** choose one of these two modes:
     * **What:** Tells the script to analyze changes on a specific Git feature branch compared to a base branch.
     * **Example:**
         ```powershell
-        python your_script_name.py --branch-name feature/new-widget --base-branch main --repo-path .
+        python scatter.py --branch-name feature/new-widget --base-branch main --repo-path .
         ```
         *(Analyzes changes on `feature/new-thingamajig` compared to `main`, assuming the repo is in the current directory `.`)*
 
@@ -169,7 +187,7 @@ These are relevant only when using `--branch-name`:
     * **Default:** `.` (the current directory)
     * **Example:**
         ```powershell
-        python your_script_name.py --branch-name my-feature -b develop --repo-path /path/to/my/solution/root
+        python scatter.py --branch-name my-feature -b develop --repo-path /path/to/my/solution/root
         ```
 
 * `-b BRANCH, --base-branch BRANCH`
@@ -177,7 +195,7 @@ These are relevant only when using `--branch-name`:
     * **Default:** `main`
     * **Example:**
         ```powershell
-        python your_script_name.py --branch-name my-feature --base-branch develop
+        python scatter.py --branch-name my-feature --base-branch develop
         ```
         *(Compares `my-feature` against `develop`)*
 
@@ -190,17 +208,17 @@ These can be used with either `--target-project` or `--branch-name`:
     * **Required?:** Yes, unless you are using `--branch-name` and omit this argument, in which case it defaults to the `--repo-path`. It's required when using `--target-project`.
     * **Example (Target Mode):**
         ```powershell
-        python your_script_name.py --target-project src/Core --search-scope src
+        python scatter.py --target-project src/Core --search-scope src
         ```
         *(Looks for consumers of `src/Core` only within the `src` directory)*
     * **Example (Git Mode):**
         *Defaults to repo-path (current dir `.`), searching everything*
         ```powershell
-        python your_script_name.py --branch-name my-feature
+        python scatter.py --branch-name my-feature
         ```
         *Explicitly limit search scope*
         ```powershell
-        python your_script_name.py --branch-name my-feature --search-scope src/Applications
+        python scatter.py --branch-name my-feature --search-scope src/Applications
         ```
 
 * `--class-name CLASSNAME`
@@ -210,11 +228,11 @@ These can be used with either `--target-project` or `--branch-name`:
     * **Default:** None (no class filtering)
     * **Example (Target Mode):**
         ```powershell
-        python your_script_name.py --target-project src/Utils --search-scope . --class-name StringHelper
+        python scatter.py --target-project src/Utils --search-scope . --class-name StringHelper
         ```
     * **Example (Git Mode):**
         ```powershell
-        python your_script_name.py --branch-name feature/cleanup --class-name ObsoleteDataMapper
+        python scatter.py --branch-name feature/cleanup --class-name ObsoleteDataMapper
         ```
         *(Will only report consumers if `ObsoleteDataMapper` was declared in changed files and other projects use it)*
 
@@ -224,7 +242,7 @@ These can be used with either `--target-project` or `--branch-name`:
     * **Default:** None
     * **Example:**
         ```powershell
-        python your_script_name.py --target-project src/Utils --search-scope . --class-name StringHelper --method-name SanitizeInput
+        python scatter.py --target-project src/Utils --search-scope . --class-name StringHelper --method-name SanitizeInput
         ```
 
 * `--target-namespace NAMESPACE`
@@ -232,7 +250,7 @@ These can be used with either `--target-project` or `--branch-name`:
     * **Default:** None (automatic detection)
     * **Example:**
         ```powershell
-        python your_script_name.py --target-project src/LegacyLib --search-scope . --target-namespace Company.Product.LegacyStuff
+        python scatter.py --target-project src/LegacyLib --search-scope . --target-namespace Company.Product.LegacyStuff
         ```
 
 * `--pipeline-csv /path/to/mapping.csv`
@@ -240,7 +258,7 @@ These can be used with either `--target-project` or `--branch-name`:
     * **Default:** None
     * **Example:**
         ```powershell
-        python your_script_name.py --branch-name my-feature --pipeline-csv cicd/pipeline-map.csv
+        python scatter.py --branch-name my-feature --pipeline-csv cicd/pipeline-map.csv
         ```
 
 * `--output-file /path/to/results.csv`
@@ -248,7 +266,7 @@ These can be used with either `--target-project` or `--branch-name`:
     * **Default:** None (prints to console)
     * **Example:**
         ```powershell
-        python your_script_name.py --target-project src/Core --search-scope . --output-file analysis_results.csv
+        python scatter.py --target-project src/Core --search-scope . --output-file analysis_results.csv
         ```
 
 * `-v, --verbose`
@@ -256,7 +274,7 @@ These can be used with either `--target-project` or `--branch-name`:
     * **Default:** False (uses INFO level logging)
     * **Example:**
         ```powershell
-        python your_script_name.py --branch-name my-feature -v
+        python scatter.py --branch-name my-feature -v
         ```
 
 * `--summarize-consumers`
@@ -264,7 +282,7 @@ These can be used with either `--target-project` or `--branch-name`:
     * **Default:** False
     * **Example:**
         ```powershell
-        python your_script_name.py --branch-name my-feature --summarize-consumers --google-api-key YOUR_API_KEY
+        python scatter.py --branch-name my-feature --summarize-consumers --google-api-key YOUR_API_KEY
         ```
 
 * `--google-api-key YOUR_API_KEY`
@@ -272,7 +290,7 @@ These can be used with either `--target-project` or `--branch-name`:
     * **Default:** None (uses `GOOGLE_API_KEY` environment variable)
     * **Example:**
         ```powershell
-        python your_script_name.py --branch-name my-feature --summarize-consumers --google-api-key "AIza..."
+        python scatter.py --branch-name my-feature --summarize-consumers --google-api-key "AIza..."
         ```
 
 * `--gemini-model MODEL_NAME`
@@ -280,7 +298,7 @@ These can be used with either `--target-project` or `--branch-name`:
     * **Default:** `gemini-1.5-flash`
     * **Example:**
         ```powershell
-        python your_script_name.py --branch-name my-feature --summarize-consumers --gemini-model gemini-pro
+        python scatter.py --branch-name my-feature --summarize-consumers --gemini-model gemini-pro
         ```
 
 ## Mock Example:
